@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Annotated
 import httpx
 import asyncio
 import time
@@ -10,6 +11,15 @@ from pathlib import Path
 APP_START = time.time()
 
 app = FastAPI(title="MCP Demo Server", version="0.1")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 ROOT = Path(__file__).parent
 RESOURCES = ROOT / "resources" / "docs"
@@ -26,10 +36,10 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 class WeatherIn(BaseModel):
-    city: Optional[str]
-    lat: Optional[float]
-    lon: Optional[float]
-    days: int = Field(..., ge=1, le=7)
+    city: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    days: Annotated[int, Field(ge=1, le=7)]
 
 
 class WeatherDay(BaseModel):
@@ -59,7 +69,7 @@ class CryptoOut(BaseModel):
 
 class FileIn(BaseModel):
     name: str
-    max_chars: int = Field(..., gt=0)
+    max_chars: Annotated[int, Field(gt=0)]
 
 
 class FileOut(BaseModel):
@@ -198,13 +208,13 @@ def health():
     return HealthOut(name="mcp-demo", uptime_sec=round(uptime, 3), http_timeout_sec=5.0, versions={"protocol": "MCP", "python": "3.11+"})
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="127.0.0.1", port=8000)
-
-
 @app.get("/")
 def root():
     # redirect to the shipped frontend
     return RedirectResponse(url="/static/index.html")
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="127.0.0.1", port=8000)
