@@ -1,11 +1,31 @@
 invoice_number,broker,due_date,amount,status
-INV-1001,Alpha Brokers,2025-09-01,12000,Overdue
-INV-1002,Beta Insurance,2025-09-10,8500,Overdue
-INV-1003,Gamma Risk,2025-09-15,4600,Overdue
-INV-1004,Delta Captive,2025-09-22,21000,Overdue
-INV-1005,Epsilon Partners,2025-09-25,17500,Overdue
-INV-1006,Zeta Group,2025-10-01,9500,Pending
-INV-1007,Eta Consulting,2025-10-05,13200,Pending
-INV-1008,Theta Global,2025-10-10,18900,Pending
-INV-1009,Iota Insurance,2025-10-15,22000,Pending
-INV-1010,Kappa Coverage,2025-10-20,7800,Pending
+INV-1011,Lambda Risk,2025-10-25,15400,Pending
+INV-1012,Mu Advisors,2025-10-28,9600,Pending
+INV-1013,Nu Captive Solutions,2025-11-01,24300,Pending
+INV-1014,Xi Partners,2025-11-03,8700,Pending
+INV-1015,Omicron Brokers,2025-11-06,11800,Pending
+INV-1016,Pi Insurance,2025-11-10,20500,Pending
+INV-1017,Rho Risk Management,2025-11-12,9200,Pending
+INV-1018,Sigma Consulting,2025-11-15,14300,Pending
+INV-1019,Tau Captives,2025-11-18,7800,Pending
+INV-1020,Upsilon Group,2025-11-22,16400,Pending
+INV-1021,Phi Partners,2025-11-25,9900,Pending
+INV-1022,Chi Insurance,2025-11-28,21200,Pending
+INV-1023,Psi Risk Advisors,2025-12-01,13300,Pending
+INV-1024,Omega Captive,2025-12-05,17600,Pending
+INV-1025,NorthStar Brokers,2025-12-08,8700,Pending
+INV-1026,Harbor Risk,2025-12-12,24200,Pending
+INV-1027,Everest Captives,2025-12-15,15700,Pending
+INV-1028,BlueRock Partners,2025-12-18,9400,Pending
+INV-1029,Ironclad Insurance,2025-12-22,18500,Pending
+INV-1030,Silverline Brokers,2025-12-28,14600,Pending
+INV-1031,Redwood Risk,2026-01-03,11800,Pending
+INV-1032,StoneBridge Captive,2026-01-07,20900,Pending
+INV-1033,Horizon Partners,2026-01-10,17200,Pending
+INV-1034,Sequoia Insurance,2026-01-15,8300,Pending
+INV-1035,Atlas Risk Advisors,2026-01-20,21400,Pending
+INV-1036,Pinnacle Captives,2026-01-24,15300,Pending
+INV-1037,Vertex Group,2026-01-28,9400,Pending
+INV-1038,Beacon Brokers,2026-02-02,18700,Pending
+INV-1039,Zenith Risk,2026-02-06,12400,Pending
+INV-1040,Stratus Captives,2026-02-10,19800,Pending
