@@ -97,6 +97,11 @@ def tool_catalog():
         ]
     }
 
+# Also expose /tools at root for Claude compatibility
+@app.get("/tools")
+def tool_catalog_root():
+    return tool_catalog()
+
 
 async def geocode_city(city: str) -> Optional[Dict[str, float]]:
     # very small local map for demo
@@ -202,10 +207,16 @@ def file_summarizer(inp: FileIn):
     return FileOut(name=inp.name, chars=len(clipped), text=clipped)
 
 
+
+# Also expose /health at root for Claude compatibility
 @app.get("/mcp/health", response_model=HealthOut)
 def health():
     uptime = time.time() - APP_START
     return HealthOut(name="mcp-demo", uptime_sec=round(uptime, 3), http_timeout_sec=5.0, versions={"protocol": "MCP", "python": "3.11+"})
+
+@app.get("/health", response_model=HealthOut)
+def health_root():
+    return health()
 
 
 @app.get("/")
