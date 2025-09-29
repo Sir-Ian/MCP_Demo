@@ -1,0 +1,1 @@
+Alignment basics\nHumans choose objectives. Models optimize. Safety requires specification and oversight.\n

@@ -1,0 +1,56 @@
+INFO:     Started server process [61807]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51956 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51957 - "GET /mcp/tools HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51976 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51990 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51990 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51990 - "GET /style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51991 - "GET /app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52011 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:52011 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52011 - "GET /style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52013 - "GET /app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52031 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52031 - "GET /style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52032 - "GET /app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52030 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52033 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52030 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52033 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52034 - "POST /mcp/file HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52035 - "POST /mcp/weather HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52035 - "POST /mcp/weather HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52055 - "POST /mcp/weather HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:52056 - "POST /mcp/weather HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52059 - "POST /mcp/crypto HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52061 - "GET /mcp/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52678 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:52678 - "GET /index.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52678 - "GET /style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52679 - "GET /app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52678 - "GET /mcp/tools HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52680 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52681 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52682 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52679 - "GET /mcp/tools HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52700 - "POST /mcp/file HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52729 - "GET /mcp/tools HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52729 - "POST /mcp/crypto HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52729 - "POST /mcp/weather HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52888 - "POST /mcp/weather HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53131 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53132 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53133 - "GET /favicon.ico HTTP/1.1" 404 Not Found
