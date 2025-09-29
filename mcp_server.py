@@ -9,6 +9,8 @@ import asyncio
 from typing import Dict, Any, Optional
 from pathlib import Path
 import time
+import csv
+from datetime import datetime, timezone, date
 
 # Initialize app start time
 APP_START = time.time()
@@ -65,6 +67,30 @@ class MCPServer:
                         }
                     },
                     "required": ["city"]
+                }
+            },
+            {
+                "name": "invoice_followup",
+                "description": "Flag overdue invoices and generate follow-up emails from a CSV",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "csv_name": {
+                            "type": "string",
+                            "description": "CSV filename in resources/docs",
+                            "default": "Fake_Invoice_Data.csv"
+                        },
+                        "thresholds": {
+                            "type": "array",
+                            "items": {"type": "integer", "minimum": 1},
+                            "description": "Overdue day thresholds",
+                            "default": [7, 14, 21]
+                        },
+                        "today": {
+                            "type": "string",
+                            "description": "Override current date as YYYY-MM-DD"
+                        }
+                    }
                 }
             },
             {
@@ -149,6 +175,8 @@ class MCPServer:
                 result = self.file_tool(arguments)
             elif tool_name == "health":
                 result = self.health_tool()
+            elif tool_name == "invoice_followup":
+                result = self.invoice_followup_tool(arguments)
             else:
                 return {
                     "jsonrpc": "2.0",
@@ -268,6 +296,134 @@ class MCPServer:
             "uptime_sec": round(uptime, 3),
             "status": "healthy",
             "protocol": "MCP"
+        }
+
+    # -----------------------------
+    # Invoice follow-up tool (stdio)
+    # -----------------------------
+    def _parse_date(self, s: str) -> date:
+        formats = ["%Y-%m-%d", "%m/%d/%Y", "%d-%m-%Y"]
+        for fmt in formats:
+            try:
+                return datetime.strptime(s.strip(), fmt).date()
+            except Exception:
+                continue
+        raise ValueError(f"unrecognized date format: {s}")
+
+    def invoice_followup_tool(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Read CSV and generate overdue follow-up emails.
+
+        CSV required columns: invoice_number, broker, due_date, amount
+        Optional columns are ignored.
+        """
+        csv_name = params.get("csv_name", "Fake_Invoice_Data.csv")
+        thresholds_in = params.get("thresholds", [7, 14, 21])
+        today_str = params.get("today")
+
+        # today reference
+        if today_str:
+            try:
+                today = self._parse_date(today_str)
+            except Exception as e:
+                raise ValueError(f"invalid today: {e}")
+        else:
+            today = datetime.now(timezone.utc).date()
+
+        # normalize thresholds
+        try:
+            thresholds = sorted({int(t) for t in thresholds_in if int(t) > 0})
+        except Exception:
+            raise ValueError("thresholds must be positive integers")
+        if not thresholds:
+            raise ValueError("thresholds must contain at least one positive integer")
+
+        # locate CSV
+        csv_path = self.resources / csv_name
+        if not csv_path.exists():
+            raise FileNotFoundError(f"csv not found: {csv_name}")
+
+        processed = 0
+        emails = []
+
+        with csv_path.open("r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            required = {"invoice_number", "broker", "due_date", "amount"}
+            fieldnames = set((reader.fieldnames or []))
+            if not required.issubset({c.strip() for c in fieldnames}):
+                missing = required - {c.strip() for c in fieldnames}
+                raise ValueError(f"csv missing columns: {', '.join(sorted(missing))}")
+
+            for row in reader:
+                processed += 1
+                try:
+                    inv = str(row.get("invoice_number", "")).strip()
+                    broker = str(row.get("broker", "")).strip()
+                    due = self._parse_date(str(row.get("due_date", "")).strip())
+                    amount = float(str(row.get("amount", "0")).replace(",", "").strip())
+                except Exception:
+                    # skip malformed rows
+                    continue
+
+                days_overdue = (today - due).days
+                if days_overdue <= 0:
+                    continue
+
+                # choose highest tier met
+                tier = 0
+                for t in thresholds:
+                    if days_overdue >= t:
+                        tier = t
+                    else:
+                        break
+                if tier == 0:
+                    continue
+
+                subject = f"Invoice {inv} is {days_overdue} days overdue"
+                greeting = f"Hi {broker},"
+                amount_str = f"${amount:,.2f}"
+
+                if tier >= 21:
+                    body = (
+                        f"{greeting}\n\n"
+                        f"This is a third reminder that invoice {inv} for {amount_str} was due on {due.isoformat()} "
+                        f"and is now {days_overdue} days overdue. Please arrange payment immediately or reply with an "
+                        f"update so we can reconcile our records.\n\n"
+                        f"If payment has been made, please share the remittance details.\n\n"
+                        f"Thank you,\nAccounts Receivable"
+                    )
+                elif tier >= 14:
+                    body = (
+                        f"{greeting}\n\n"
+                        f"Friendly follow-up on invoice {inv} for {amount_str} due {due.isoformat()}. "
+                        f"Our records show it is {days_overdue} days overdue. Could you share a quick status or "
+                        f"expected payment date?\n\n"
+                        f"Thanks so much,\nAccounts Receivable"
+                    )
+                else:  # >=7
+                    body = (
+                        f"{greeting}\n\n"
+                        f"Quick reminder: invoice {inv} for {amount_str} was due {due.isoformat()} and appears to be "
+                        f"{days_overdue} days overdue. Please let us know if you need the invoice resent or have any "
+                        f"questions.\n\n"
+                        f"Best,\nAccounts Receivable"
+                    )
+
+                emails.append({
+                    "invoice_number": inv,
+                    "broker": broker,
+                    "due_date": due.isoformat(),
+                    "amount": amount,
+                    "days_overdue": days_overdue,
+                    "tier": tier,
+                    "subject": subject,
+                    "body": body,
+                })
+
+        return {
+            "processed": processed,
+            "overdue": len(emails),
+            "emails": emails,
+            "source": csv_path.name,
         }
 
     async def handle_message(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:

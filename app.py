@@ -7,6 +7,8 @@ import asyncio
 import time
 import json
 from pathlib import Path
+import csv
+from datetime import datetime, timezone, date
 
 APP_START = time.time()
 
@@ -85,6 +87,30 @@ class HealthOut(BaseModel):
     versions: Dict[str, str]
 
 
+class InvoiceFollowupIn(BaseModel):
+    csv_name: str = "Fake_Invoice_Data.csv"
+    thresholds: List[int] = [7, 14, 21]
+    today: Optional[str] = None  # YYYY-MM-DD; if None, use current UTC date
+
+
+class FollowupEmail(BaseModel):
+    invoice_number: str
+    broker: str
+    due_date: str
+    amount: float
+    days_overdue: int
+    tier: int
+    subject: str
+    body: str
+
+
+class InvoiceFollowupOut(BaseModel):
+    processed: int
+    overdue: int
+    emails: List[FollowupEmail]
+    source: str
+
+
 @app.get("/mcp/tools")
 def tool_catalog():
     """Return a small tool catalog describing endpoints and contracts."""
@@ -94,6 +120,7 @@ def tool_catalog():
             {"name": "crypto", "path": "/mcp/crypto", "in": "CryptoIn", "out": "CryptoOut"},
             {"name": "file", "path": "/mcp/file", "in": "FileIn", "out": "FileOut"},
             {"name": "health", "path": "/mcp/health", "in": "none", "out": "HealthOut"},
+            {"name": "invoice_followup", "path": "/mcp/invoice_followup", "in": "InvoiceFollowupIn", "out": "InvoiceFollowupOut"},
         ]
     }
 
@@ -223,6 +250,124 @@ def health_root():
 def root():
     # redirect to the shipped frontend
     return RedirectResponse(url="/static/index.html")
+
+
+def _parse_date(d: str) -> date:
+    fmts = ["%Y-%m-%d", "%m/%d/%Y", "%d-%m-%Y"]
+    for f in fmts:
+        try:
+            return datetime.strptime(d.strip(), f).date()
+        except Exception:
+            continue
+    raise HTTPException(status_code=400, detail=f"unrecognized date format: {d}")
+
+
+@app.post("/mcp/invoice_followup", response_model=InvoiceFollowupOut)
+def invoice_followup(inp: InvoiceFollowupIn):
+    # Establish 'today' reference
+    if inp.today:
+        try:
+            today = _parse_date(inp.today)
+        except HTTPException:
+            raise
+    else:
+        today = datetime.now(timezone.utc).date()
+
+    # Normalize and sort thresholds ascending
+    thresholds = sorted({int(t) for t in inp.thresholds if int(t) > 0})
+    if not thresholds:
+        raise HTTPException(status_code=400, detail="thresholds must contain positive integers")
+
+    # Locate CSV file
+    csv_path = RESOURCES / inp.csv_name
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail=f"csv not found: {inp.csv_name}")
+
+    emails: List[FollowupEmail] = []
+    processed = 0
+
+    with csv_path.open("r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        required_cols = {"invoice_number", "broker", "due_date", "amount"}
+        missing = required_cols - set(c.strip() for c in reader.fieldnames or [])
+        if missing:
+            raise HTTPException(status_code=400, detail=f"csv missing columns: {', '.join(sorted(missing))}")
+
+        for row in reader:
+            processed += 1
+            try:
+                inv = str(row.get("invoice_number", "")).strip()
+                broker = str(row.get("broker", "")).strip()
+                due = _parse_date(str(row.get("due_date", "")).strip())
+                amount = float(str(row.get("amount", "0")).replace(",", "").strip())
+            except Exception:
+                # Skip malformed rows
+                continue
+
+            days_overdue = (today - due).days
+            if days_overdue <= 0:
+                continue
+
+            # Determine highest threshold tier met
+            tier = 0
+            for t in thresholds:
+                if days_overdue >= t:
+                    tier = t
+                else:
+                    break
+            if tier == 0:
+                continue
+
+            # Build email template by tier
+            subject = f"Invoice {inv} is {days_overdue} days overdue"
+            greeting = f"Hi {broker},"
+            amount_str = f"${amount:,.2f}"
+
+            if tier >= 21:
+                body = (
+                    f"{greeting}\n\n"
+                    f"This is a third reminder that invoice {inv} for {amount_str} was due on {due.isoformat()} "
+                    f"and is now {days_overdue} days overdue. Please arrange payment immediately or reply with an "
+                    f"update so we can reconcile our records.\n\n"
+                    f"If payment has been made, please share the remittance details.\n\n"
+                    f"Thank you,\nAccounts Receivable"
+                )
+            elif tier >= 14:
+                body = (
+                    f"{greeting}\n\n"
+                    f"Friendly follow-up on invoice {inv} for {amount_str} due {due.isoformat()}. "
+                    f"Our records show it is {days_overdue} days overdue. Could you share a quick status or "
+                    f"expected payment date?\n\n"
+                    f"Thanks so much,\nAccounts Receivable"
+                )
+            else:  # >=7
+                body = (
+                    f"{greeting}\n\n"
+                    f"Quick reminder: invoice {inv} for {amount_str} was due {due.isoformat()} and appears to be "
+                    f"{days_overdue} days overdue. Please let us know if you need the invoice resent or have any "
+                    f"questions.\n\n"
+                    f"Best,\nAccounts Receivable"
+                )
+
+            emails.append(
+                FollowupEmail(
+                    invoice_number=inv,
+                    broker=broker,
+                    due_date=due.isoformat(),
+                    amount=amount,
+                    days_overdue=days_overdue,
+                    tier=tier,
+                    subject=subject,
+                    body=body,
+                )
+            )
+
+    return InvoiceFollowupOut(
+        processed=processed,
+        overdue=len(emails),
+        emails=emails,
+        source=str(csv_path.name),
+    )
 
 
 if __name__ == "__main__":

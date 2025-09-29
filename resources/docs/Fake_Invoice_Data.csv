@@ -1,0 +1,11 @@
+invoice_number,broker,due_date,amount,status
+INV-1001,Alpha Brokers,2025-09-01,12000,Overdue
+INV-1002,Beta Insurance,2025-09-10,8500,Overdue
+INV-1003,Gamma Risk,2025-09-15,4600,Overdue
+INV-1004,Delta Captive,2025-09-22,21000,Overdue
+INV-1005,Epsilon Partners,2025-09-25,17500,Overdue
+INV-1006,Zeta Group,2025-10-01,9500,Pending
+INV-1007,Eta Consulting,2025-10-05,13200,Pending
+INV-1008,Theta Global,2025-10-10,18900,Pending
+INV-1009,Iota Insurance,2025-10-15,22000,Pending
+INV-1010,Kappa Coverage,2025-10-20,7800,Pending
