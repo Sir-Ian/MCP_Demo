@@ -9,6 +9,7 @@ import asyncio
 from typing import Dict, Any, Optional
 from pathlib import Path
 import time
+import httpx
 import csv
 from datetime import datetime, timezone, date
 
@@ -213,47 +214,97 @@ class MCPServer:
             }
 
     async def weather_tool(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Get weather forecast (using fallback data for demo)"""
-        city = params.get("city", "unknown")
-        days = params.get("days", 1)
-        
-        # For demo purposes, return deterministic fallback data
-        # In production, this would call the actual weather API
-        daily = []
-        for i in range(days):
-            day_offset = 86400 * i
-            date = time.strftime("%Y-%m-%d", time.gmtime(time.time() + day_offset))
-            daily.append({
-                "date": date,
-                "t_max": 20.0 + i,
-                "t_min": 10.0 + i,
-                "precip_mm": 0.0
-            })
-        
-        return {
-            "location": city,
-            "daily": daily,
-            "source": "fallback"
+        """Get weather forecast (live via open-meteo with graceful fallback)."""
+        city = params.get("city", "").strip()
+        days = int(params.get("days", 1))
+        if days < 1:
+            days = 1
+        if days > 7:
+            days = 7
+
+        # very small local map for demo parity with HTTP server
+        local_geo = {
+            "chicago": {"lat": 41.8781, "lon": -87.6298},
+            "new york": {"lat": 40.7128, "lon": -74.0060},
+            "london": {"lat": 51.5074, "lon": -0.1278},
         }
 
+        location = city or "unknown"
+        lat = lon = None
+        if city:
+            geo = local_geo.get(city.lower())
+            if geo:
+                lat, lon = geo["lat"], geo["lon"]
+
+        daily = []
+        source = "fallback"
+
+        if lat is not None and lon is not None:
+            url = (
+                f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
+                f"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=UTC&forecast_days={days}"
+            )
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as c:
+                    r = await c.get(url)
+                    r.raise_for_status()
+                    data = r.json()
+                    dates = data["daily"]["time"]
+                    tmaxs = data["daily"]["temperature_2m_max"]
+                    tmins = data["daily"]["temperature_2m_min"]
+                    precs = data["daily"].get("precipitation_sum", [0.0] * len(dates))
+                    for i in range(len(dates)):
+                        daily.append({
+                            "date": dates[i],
+                            "t_max": float(tmaxs[i]),
+                            "t_min": float(tmins[i]),
+                            "precip_mm": float(precs[i]),
+                        })
+                    source = "open-meteo"
+            except Exception:
+                # fall through to deterministic data below
+                pass
+
+        if not daily:
+            for i in range(days):
+                date_s = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 86400 * i))
+                daily.append({
+                    "date": date_s,
+                    "t_max": 20.0 + i,
+                    "t_min": 10.0 + i,
+                    "precip_mm": 0.0,
+                })
+
+        return {"location": location, "daily": daily, "source": source}
+
     async def crypto_tool(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Get crypto prices (using fallback data for demo)"""
-        symbol = params.get("symbol", "btc").lower()
-        vs = params.get("vs", "usd").lower()
-        
-        # Fallback prices for demo
-        prices = {
-            "btc": 50000.0,
-            "eth": 3500.0,
-            "sol": 150.0
-        }
-        
-        return {
-            "symbol": symbol,
-            "vs": vs,
-            "price": prices.get(symbol, 1.0),
-            "source": "fallback"
-        }
+        """Get crypto price (live via CoinGecko with graceful fallback)."""
+        symbol = str(params.get("symbol", "btc")).lower()
+        vs = str(params.get("vs", "usd")).lower()
+
+        symbol_map = {"btc": "bitcoin", "eth": "ethereum", "sol": "solana"}
+        coin_id = symbol_map.get(symbol)
+
+        price: Optional[float] = None
+        source = "fallback"
+
+        if coin_id:
+            url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies={vs}"
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as c:
+                    r = await c.get(url)
+                    r.raise_for_status()
+                    data = r.json()
+                    price = float(data[coin_id][vs])
+                    source = "coingecko"
+            except Exception:
+                price = None
+
+        if price is None:
+            fixed = {"bitcoin": 50000.0, "ethereum": 3500.0, "solana": 150.0}
+            price = fixed.get(coin_id or "", 1.0)
+
+        return {"symbol": symbol, "vs": vs, "price": price, "source": source}
 
     def file_tool(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Read and summarize a file"""
